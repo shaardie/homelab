@@ -1,0 +1,388 @@
+---
+
+- hosts: monitoring
+  become: true
+  vars_files:
+    - secret-vars.yml
+  tasks:
+    - name: ensure nginx is installed
+      ansible.builtin.apt:
+        state: present
+        name:
+          - nginx
+
+    - name: ensure prometheus directories
+      ansible.builtin.file:
+        state: directory
+        path: '{{ item }}'
+        group: root
+        owner: root
+        mode: 0755
+      loop:
+        - /opt/prometheus/
+        - /opt/prometheus/bin
+        - /opt/prometheus/tar
+        - /opt/prometheus/config
+
+    - name: ensure prometheus tarballs
+      ansible.builtin.get_url:
+        checksum: 'sha256:{{ item.sha256sum }}'
+        dest: /opt/prometheus/tar/{{ item.name }}
+        group: root
+        owner: root
+        mode: 0644
+        url: '{{ item.url }}'
+      loop:
+        - url: https://github.com/prometheus/prometheus/releases/download/v2.32.1/prometheus-2.32.1.linux-amd64.tar.gz
+          sha256sum: f08e96d73330a9ee7e6922a9f5b72ea188988a083bbfa9932359339fcf504a74
+          name: prometheus.tar.gz
+        - url: https://github.com/prometheus/alertmanager/releases/download/v0.23.0/alertmanager-0.23.0.linux-amd64.tar.gz
+          sha256sum: 77793c4d9bb92be98f7525f8bc50cb8adb8c5de2e944d5500e90ab13918771fc
+          name: alertmanager.tar.gz
+        - url: https://github.com/prometheus/blackbox_exporter/releases/download/v0.19.0/blackbox_exporter-0.19.0.linux-amd64.tar.gz
+          sha256sum: af2ae1394c4f9b46962ac1510e1dacac78115c11e625991fb6c54825d2240896
+          name: blackbox_exporter.tar.gz
+
+    - name: ensure prometheus binaries
+      ansible.builtin.command: tar
+        --verbose
+        --no-same-owner
+        --extract
+        --file=/opt/prometheus/tar/{{ item }}.tar.gz
+        --directory=/opt/prometheus/bin/
+        --wildcards
+        '*/{{ item }}'
+        --strip-components=1
+      loop:
+        - prometheus
+        - alertmanager
+        - blackbox_exporter
+
+    - name: ensure prometheus user
+      ansible.builtin.user:
+        create_home: false
+        name: prometheus
+        shell: /bin/false
+        state: present
+        system: true
+
+    - name: ensure blackbox exporter config
+      ansible.builtin.copy:
+        dest: /opt/prometheus/config/blackbox.yml
+        mode: 0644
+        owner: root
+        group: root
+        force: true
+        content: |
+            modules:
+              http:
+                prober: http
+              icmp:
+                prober: icmp
+      notify: restart prometheus-blackbox-exporter
+
+    - name: ensure prometheus config
+      ansible.builtin.copy:
+        dest: /opt/prometheus/config/prometheus.yml
+        mode: 0644
+        owner: root
+        group: root
+        force: true
+        content: |
+            alerting:
+              alertmanagers:
+              - static_configs:
+                - targets: ['localhost:9093']
+            rule_files:
+            - /opt/prometheus/config/rules.yml
+            scrape_configs:
+              - job_name: prometheus
+                static_configs:
+                  - targets:
+                      - localhost:9090
+              - job_name: nodes
+                static_configs:
+                  - targets:
+                      - monitoring.internal.haardiek.org:9100
+              - job_name: openwrt
+                static_configs:
+                  - targets:
+                      - router.internal.haardiek.org:9100
+              - job_name: icmp
+                metrics_path: /probe
+                params:
+                  module:
+                  - icmp
+                static_configs:
+                - targets:
+                  - fritz.box
+                  - nas.haardiek.org
+                  - pve.internal.haardiek.org
+                  - router.internal.haardiek.org
+                  - switch4.internal.haardiek.org
+                  - switch8.internal.haardiek.org
+                relabel_configs:
+                  - source_labels: [__address__]
+                    target_label: __param_target
+                  - source_labels: [__param_target]
+                    target_label: instance
+                  - target_label: __address__
+                    replacement: localhost:9115
+              - job_name: http
+                metrics_path: /probe
+                params:
+                  module:
+                  - http
+                static_configs:
+                - targets:
+                  - http://switch4.internal.haardiek.org
+                  - http://switch8.internal.haardiek.org
+                  - https://fritz.box
+                  - https://nas.haardiek.org
+                  - https://pve.internal.haardiek.org:8086
+                  - https://router.internal.haardiek.org
+                relabel_configs:
+                  - source_labels: [__address__]
+                    target_label: __param_target
+                  - source_labels: [__param_target]
+                    target_label: instance
+                  - target_label: __address__
+                    replacement: localhost:9115
+      notify: restart prometheus
+
+    - name: ensure prometheus config
+      ansible.builtin.copy:
+        dest: /opt/prometheus/config/rules.yml
+        mode: 0644
+        owner: root
+        group: root
+        force: true
+        content: |
+            groups:
+            - name: Services
+              rules:
+              - alert: CertExpires
+                expr: probe_ssl_earliest_cert_expiry{job="https"} - time() < 86400 * 30
+              - alert: Website down
+                expr: up{job="http"} == 0
+                for: 5m
+            - name: Node Rules
+              rules:
+              - alert: DiskWillFill
+                expr: predict_linear(node_filesystem_free{job="node"}[12h], 24 * 3600) < 0
+                for: 1h
+            - name: Hosts
+              rules:
+              - alert: HostDown
+                expr: up{job="icmp"} == 0
+                for: 5m
+
+      notify: restart prometheus
+
+    - name: ensure prometheus config
+      ansible.builtin.copy:
+        dest: /opt/prometheus/config/alertmanager.yml
+        mode: 0644
+        owner: root
+        group: root
+        force: true
+        content: |
+            global:
+              smtp_smarthost: 'smtp.1und1.de:587'
+              smtp_from: '{{ email.username }}'
+              smtp_auth_username: '{{ email.username }}'
+              smtp_auth_password: '{{ email.password }}'
+
+            route:
+              group_by: ['alertname', 'cluster', 'service']
+              group_wait: 30s
+              group_interval: 5m
+              repeat_interval: 3h
+              receiver: admin
+            receivers:
+            - name: 'admin'
+              email_configs:
+              - to: 'sven@haardiek.de'
+      notify: restart prometheus-alertmanager
+
+    - name: ensure prometheus service files
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/{{ item.name }}
+        mode: 0644
+        owner: root
+        group: root
+        force: true
+        content: '{{ item.content }}'
+      loop:
+        - name: prometheus.service
+          content: |
+              [Unit]
+              Description=Monitoring system and time series database
+              Documentation=https://prometheus.io/docs/introduction/overview/ man:prometheus(1)
+
+              [Service]
+              Restart=on-failure
+              User=prometheus
+              ExecStart=/opt/prometheus/bin/prometheus \
+                --web.listen-address=127.0.0.1:9090 \
+                --web.external-url=https://prometheus.internal.haardiek.org \
+                --config.file=/opt/prometheus/config/prometheus.yml
+              ExecReload=/bin/kill -HUP $MAINPID
+              TimeoutStopSec=20s
+              SendSIGKILL=no
+
+              # systemd hardening-options
+              AmbientCapabilities=
+              CapabilityBoundingSet=
+              DeviceAllow=/dev/null rw
+              DevicePolicy=strict
+              LimitMEMLOCK=0
+              LimitNOFILE=8192
+              LockPersonality=true
+              MemoryDenyWriteExecute=true
+              NoNewPrivileges=true
+              PrivateDevices=true
+              PrivateTmp=true
+              PrivateUsers=true
+              ProtectControlGroups=true
+              ProtectHome=true
+              ProtectKernelModules=true
+              ProtectKernelTunables=true
+              ProtectSystem=full
+              RemoveIPC=true
+              RestrictNamespaces=true
+              RestrictRealtime=true
+              SystemCallArchitectures=native
+
+              [Install]
+              WantedBy=multi-user.target
+        - name: prometheus-alertmanager.service
+          content: |
+              [Unit]
+              Description=Alertmanager for prometheus
+              Documentation=https://prometheus.io/docs/alerting/alertmanager/
+
+              [Service]
+              Restart=on-failure
+              User=prometheus
+              ExecStart=/opt/prometheus/bin/alertmanager \
+                --web.external-url=https://alertmanager.monitoring.internal.haardiek.org \
+                --web.listen-address=127.0.0.1:9093 \
+                --config.file="/opt/prometheus/config/alertmanager.yml"
+              ExecReload=/bin/kill -HUP $MAINPID
+              TimeoutStopSec=20s
+              SendSIGKILL=no
+
+              [Install]
+              WantedBy=multi-user.target
+        - name: prometheus-blackbox-exporter.service
+          content: |
+              [Unit]
+              Description=Blackbox exporter for Prometheus
+              Documentation=https://prometheus.io/docs/introduction/overview/ man:prometheus-blackbox-exporter(1)
+
+              [Service]
+              Restart=on-failure
+              User=prometheus
+              ExecStart=/opt/prometheus/bin/blackbox_exporter \
+                --web.listen-address=127.0.0.1:9115 \
+                --config.file /opt/prometheus/config/blackbox.yml
+
+              [Install]
+              WantedBy=multi-user.target
+      notify: reload systemd daemon
+
+    - name: ensure prometheus services are enabled and started
+      ansible.builtin.service:
+        name: '{{ item }}'
+        enabled: true
+        state: started
+      loop:
+        - prometheus
+        - prometheus-alertmanager
+        - prometheus-blackbox-exporter
+
+    - name: ensure nginx config
+      ansible.builtin.copy:
+        dest: /etc/nginx/nginx.conf
+        mode: 0644
+        owner: root
+        group: root
+        force: true
+        content: |
+            user www-data;
+            worker_processes auto;
+            pid /run/nginx.pid;
+            include /etc/nginx/modules-enabled/*.conf;
+            events {
+              worker_connections 768;
+            }
+            http {
+              sendfile on;
+              tcp_nopush on;
+              types_hash_max_size 2048;
+              include /etc/nginx/mime.types;
+              default_type application/octet-stream;
+              ssl_protocols TLSv1.3;
+              ssl_prefer_server_ciphers on;
+              access_log /var/log/nginx/access.log;
+              error_log /var/log/nginx/error.log;
+              gzip on;
+              server {
+                listen 80;
+                listen [::]:80;
+                server_name prometheus.monitoring.internal.haardiek.org;
+                return 301 https://prometheus.monitoring.internal.haardiek.org$request_uri;
+              }
+              server {
+                listen 443 ssl;
+                listen [::]:443 ssl;
+                server_name prometheus.monitoring.internal.haardiek.org;
+                ssl_certificate /etc/letsencrypt/live/prometheus.monitoring.internal.haardiek.org/fullchain.pem;
+                ssl_certificate_key /etc/letsencrypt/live/prometheus.monitoring.internal.haardiek.org/privkey.pem;
+                location / {
+                  proxy_pass http://127.0.0.1:9090;
+                }
+              }
+              server {
+                listen 80;
+                listen [::]:80;
+                server_name alertmanager.monitoring.internal.haardiek.org;
+                return 301 https://alertmanager.monitoring.internal.haardiek.org$request_uri;
+              }
+              server {
+                listen 443 ssl;
+                listen [::]:443 ssl;
+                server_name alertmanager.monitoring.internal.haardiek.org;
+                ssl_certificate /etc/letsencrypt/live/alertmanager.monitoring.internal.haardiek.org/fullchain.pem;
+                ssl_certificate_key /etc/letsencrypt/live/alertmanager.monitoring.internal.haardiek.org/privkey.pem;
+                location / {
+                  proxy_pass http://127.0.0.1:9093;
+                }
+              }
+            }
+      notify: reload nginx
+
+  handlers:
+    - name: reload systemd daemon
+      command: systemctl daemon-reload
+
+    - name: restart prometheus-blackbox-exporter
+      service:
+        name: prometheus-blackbox-exporter
+        state: restarted
+
+    - name: restart prometheus-alertmanager
+      service:
+        name: prometheus-alertmanager
+        state: restarted
+
+    - name: restart prometheus
+      service:
+        name: prometheus
+        state: restarted
+
+    - name: reload nginx
+      service:
+        name: nginx
+        state: reloaded

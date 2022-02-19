@@ -1,0 +1,22 @@
+iface eth0:0 inet6 static
+    address {{ tunnel.external_endpoint }}/128
+
+auto wrap1
+iface wrap1 inet manual
+    pre-up ifup -v eth0:0
+    pre-up ip -6 tunnel add wrap1 mode ipip6 remote {{ tunnel.internal_endpoint }} local {{ tunnel.external_endpoint }} dev eth0
+    up ip -6 link set dev wrap1 up
+    post-up ip -4 route add {{ tunnel.internal_network }} dev wrap1
+
+    # SNAT
+    post-up iptables -t nat -A POSTROUTING -o eth0 -j SNAT --to 202.61.205.26
+    pre-down iptables -t nat -D POSTROUTING -o eth0 -j SNAT --to 202.61.205.26
+
+    # DNAT
+    {% for item in tunnel.routes -%}
+    post-up iptables -t nat -A PREROUTING -i eth0 -p tcp --dport {{ item.port }} -j DNAT --to {{ item.ipv4 }}
+    pre-down iptables -t nat -D PREROUTING -i eth0 -p tcp --dport {{ item.port }} -j DNAT --to {{ item.ipv4 }}
+    {% endfor %}
+
+    post-down ip -6 tunnel delete wrap1
+    post-down ifdown -v eth0:0

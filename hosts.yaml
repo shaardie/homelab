@@ -1,0 +1,24 @@
+---
+
+monitoring:
+  hosts:
+    monitoring.internal.haardiek.org:
+      certificates:
+        - monitoring.internal.haardiek.org
+        - alertmanager.monitoring.internal.haardiek.org
+        - prometheus.monitoring.internal.haardiek.org
+tunnel:
+  hosts:
+    tunnel.haardiek.org:
+      skip_node_exporter: true
+
+proxy:
+  hosts:
+    proxy01.internal.haardiek.org:
+      certificates:
+        - nas.haardiek.org
+      proxy_state: MASTER
+    proxy02.internal.haardiek.org:
+      certificates:
+        - nas.haardiek.org
+      proxy_state: BACKUP

@@ -1,0 +1,36 @@
+global_defs {
+  router_id nginx
+  enable_script_security
+  script_user nobody
+}
+
+# Script to check whether Nginx is running or not
+vrrp_script check_nginx {
+  script "/usr/bin/curl --fail http://localhost/health"
+  interval 1
+  weight 50
+}
+
+# Virtual interface - The priority specifies the order in which the assigned interface to take over in a failover
+vrrp_instance VI_01 {
+  state {{ proxy_state }}
+  interface eth0
+  virtual_router_id 151
+  priority {% if proxy_state == "MASTER" %}110{% else %}100{% endif %}
+
+  virtual_ipaddress {
+    {{ proxy.virtual_ipv4 }}
+  }
+
+  virtual_ipaddress_excluded {
+    {{ proxy.virtual_ipv6 }}
+  }
+
+  track_script {
+    check_nginx
+  }
+  authentication {
+    auth_type AH
+    auth_pass {{ proxy.pass }}
+  }
+}

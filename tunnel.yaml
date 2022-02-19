@@ -1,0 +1,34 @@
+---
+
+- hosts: tunnel
+  become: true
+  vars_files:
+    - secret-vars.yml
+  tasks:
+    - name: ensure network tools are installed
+      ansible.builtin.apt:
+        state: present
+        name:
+          - iptables
+
+    - name: ensure network config
+      ansible.builtin.template:
+        dest: /etc/network/interfaces.d/60-tunnel.cfg
+        mode: 0644
+        owner: root
+        group: root
+        force: true
+        src: 60-tunnel.cfg.j2
+      notify: restart networking
+
+    - name: ensure sysctl config
+      ansible.posix.sysctl:
+        name: net.ipv4.ip_forward
+        value: "1"
+        state: present
+
+  handlers:
+    - name: restart networking
+      service:
+        name: networking
+        state: restarted

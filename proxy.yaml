@@ -1,0 +1,45 @@
+---
+
+- hosts: proxy
+  become: true
+  vars_files:
+    - secret-vars.yml
+  tasks:
+    - name: ensure nginx and keepalived
+      ansible.builtin.apt:
+        state: present
+        name:
+          - nginx
+          - keepalived
+          - curl
+
+    - name: ensure nginx base config
+      ansible.builtin.template:
+        dest: /etc/nginx/nginx.conf
+        mode: 0644
+        owner: root
+        group: root
+        force: true
+        src: nginx.conf.j2
+      notify: reload nginx
+
+    - name: ensure keepalived config
+      ansible.builtin.template:
+        dest: /etc/keepalived/keepalived.conf
+        mode: 0644
+        owner: root
+        group: root
+        force: true
+        src: keepalived.conf.j2
+      notify: restart keepalived
+
+  handlers:
+    - name: reload nginx
+      service:
+        name: nginx
+        state: reloaded
+
+    - name: restart keepalived
+      service:
+        name: keepalived
+        state: restarted
