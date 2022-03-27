@@ -22,3 +22,10 @@ proxy:
       certificates:
         - nas.haardiek.org
       proxy_state: BACKUP
+
+jumphost:
+  hosts:
+    jumphost01.internal.haardiek.org:
+      jumphost_state: MASTER
+    jumphost02.internal.haardiek.org:
+      jumphost_state: BACKUP

@@ -30,7 +30,7 @@
         owner: root
         group: root
         force: true
-        src: keepalived.conf.j2
+        src: proxy_keepalived.conf.j2
       notify: restart keepalived
 
   handlers:

@@ -1,0 +1,24 @@
+global_defs {
+  router_id sshd
+}
+
+# Virtual interface - The priority specifies the order in which the assigned interface to take over in a failover
+vrrp_instance VI_01 {
+  state {{ jumphost_state }}
+  interface eth0
+  virtual_router_id 152
+  priority {% if jumphost_state == "MASTER" %}110{% else %}100{% endif %}
+
+  virtual_ipaddress {
+    {{ jumphost.virtual_ipv4 }}
+  }
+
+  virtual_ipaddress_excluded {
+    {{ jumphost.virtual_ipv6 }}
+  }
+
+  authentication {
+    auth_type AH
+    auth_pass {{ jumphost.pass }}
+  }
+}

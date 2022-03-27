@@ -1,0 +1,83 @@
+---
+
+- hosts: jumphost
+  become: true
+  vars_files:
+    - secret-vars.yml
+  tasks:
+    - name: ensure keepalived
+      ansible.builtin.apt:
+        state: present
+        name:
+          - ssh
+          - keepalived
+
+    - name: ensure ssh
+      ansible.builtin.copy:
+        dest: /etc/ssh/sshd_config
+        mode: 0644
+        owner: root
+        group: root
+        force: true
+        src: sshd_config
+      notify: restart sshd
+
+    - name: ensure ssh host keys
+      ansible.builtin.copy:
+        dest: /etc/ssh/{{ item.name }}
+        mode: 0{{ item.mode }}
+        owner: root
+        group: root
+        force: true
+        content: "{{ item.content }}"
+      loop:
+        - name: ssh_host_dsa_key
+          mode: 600
+          content: "{{ jumphost.ssh_host_dsa_key }}"
+        - name: ssh_host_dsa_key.pub
+          mode: 644
+          content: "{{ jumphost.ssh_host_dsa_key_pub }}"
+
+        - name: ssh_host_ecdsa_key
+          mode: 600
+          content: "{{ jumphost.ssh_host_ecdsa_key }}"
+        - name: ssh_host_ecdsa_key.pub
+          mode: 644
+          content: "{{ jumphost.ssh_host_ecdsa_key_pub }}"
+
+        - name: ssh_host_ed25519_key
+          mode: 600
+          content: "{{ jumphost.ssh_host_ed25519_key }}"
+        - name: ssh_host_ed25519_key.pub
+          mode: 644
+          content: "{{ jumphost.ssh_host_ed25519_key_pub }}"
+
+        - name: ssh_host_rsa_key
+          mode: 600
+          content: "{{ jumphost.ssh_host_rsa_key }}"
+        - name: ssh_host_rsa_key.pub
+          mode: 644
+          content: "{{ jumphost.ssh_host_rsa_key_pub }}"
+
+      notify: restart sshd
+
+    - name: ensure keepalived config
+      ansible.builtin.template:
+        dest: /etc/keepalived/keepalived.conf
+        mode: 0644
+        owner: root
+        group: root
+        force: true
+        src: jumphost_keepalived.conf.j2
+      notify: restart keepalived
+
+  handlers:
+    - name: restart sshd
+      service:
+        name: sshd
+        state: restarted
+
+    - name: restart keepalived
+      service:
+        name: keepalived
+        state: restarted
