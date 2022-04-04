@@ -1,0 +1,279 @@
+---
+
+- hosts: netbox
+  become: true
+  vars_files:
+    - secret-vars.yml
+  tasks:
+    - name: ensure software
+      ansible.builtin.apt:
+        state: present
+        name:
+          - nginx
+          - postgresql
+          - python3-psycopg2
+          - redis-server
+          - git
+          # Netbox Python Package
+          - python3
+          - python3-pip
+          - python3-venv
+          - python3-dev
+          - build-essential
+          - libxml2-dev
+          - libxslt1-dev
+          - libffi-dev
+          - libpq-dev
+          - libssl-dev
+          - zlib1g-dev
+
+    - name: ensure postgresql database
+      become: true
+      become_user: postgres
+      community.postgresql.postgresql_db:
+        name: netbox
+
+    - name: ensure postgresql netbox user
+      become: true
+      become_user: postgres
+      community.postgresql.postgresql_user:
+        name: netbox
+        db: netbox
+        password: '{{ netbox.postgresql_password }}'
+
+    - name: ensure netbox code
+      ansible.builtin.git:
+        repo: https://github.com/netbox-community/netbox.git
+        dest: /opt/netbox
+        version: v3.1.10
+
+    - name: ensure netbox config
+      ansible.builtin.copy:
+        dest: /opt/netbox/netbox/netbox/configuration.py
+        mode: 0644
+        owner: root
+        group: root
+        force: true
+        content: |
+            ALLOWED_HOSTS = ["*"]
+            DATABASE = {
+                'NAME': 'netbox',
+                'USER': 'netbox',
+                'PASSWORD': '{{ netbox.postgresql_password }}',
+                'HOST': 'localhost',
+                'PORT': '',
+                'CONN_MAX_AGE': 300,
+            }
+            REDIS = {
+                'tasks': {
+                    'HOST': 'localhost',
+                    'PORT': 6379,
+                    'PASSWORD': '',
+                    'DATABASE': 0,
+                    'SSL': False,
+                },
+                'caching': {
+                    'HOST': 'localhost',
+                    'PORT': 6379,
+                    'PASSWORD': '',
+                    'DATABASE': 1,
+                    'SSL': False,
+                }
+            }
+            SECRET_KEY = '{{ netbox.secret_key }}'
+            ADMINS = [
+                ('Sven Haardiek', 'sven@haardiek.de'),
+            ]
+            BASE_PATH = ''
+            CORS_ORIGIN_ALLOW_ALL = False
+            CORS_ORIGIN_WHITELIST = []
+            CORS_ORIGIN_REGEX_WHITELIST = []
+            DEBUG = False
+
+            # Email settings
+            EMAIL = {
+                'SERVER': 'localhost',
+                'PORT': 25,
+                'USERNAME': '',
+                'PASSWORD': '',
+                'USE_SSL': False,
+                'USE_TLS': False,
+                'TIMEOUT': 10,  # seconds
+                'FROM_EMAIL': '',
+            }
+            EXEMPT_VIEW_PERMISSIONS = []
+            INTERNAL_IPS = ('127.0.0.1', '::1')
+            LOGGING = {}
+            LOGIN_PERSISTENCE = False
+            LOGIN_REQUIRED = False
+            LOGIN_TIMEOUT = None
+            MEDIA_ROOT = '/opt/media'
+            METRICS_ENABLED = True
+            PLUGINS = []
+            REMOTE_AUTH_ENABLED = False
+            REMOTE_AUTH_BACKEND = 'netbox.authentication.RemoteUserBackend'
+            REMOTE_AUTH_HEADER = 'HTTP_REMOTE_USER'
+            REMOTE_AUTH_AUTO_CREATE_USER = True
+            REMOTE_AUTH_DEFAULT_GROUPS = []
+            REMOTE_AUTH_DEFAULT_PERMISSIONS = {}
+            RELEASE_CHECK_URL = None
+            REPORTS_ROOT = '/opt/reports'
+            RQ_DEFAULT_TIMEOUT = 300
+            SCRIPTS_ROOT = '/opt/scripts'
+            SESSION_COOKIE_NAME = 'sessionid'
+            SESSION_FILE_PATH = None
+            TIME_ZONE = 'UTC'
+            DATE_FORMAT = 'N j, Y'
+            SHORT_DATE_FORMAT = 'Y-m-d'
+            TIME_FORMAT = 'g:i a'
+            SHORT_TIME_FORMAT = 'H:i:s'
+            DATETIME_FORMAT = 'N j, Y g:i a'
+            SHORT_DATETIME_FORMAT = 'Y-m-d H:i'
+
+    - name: ensure netbox user
+      ansible.builtin.user:
+        create_home: false
+        name: netbox
+        shell: /bin/false
+        state: present
+        system: true
+
+    - name: ensure netbox directories
+      ansible.builtin.file:
+        state: directory
+        path: '{{ item }}'
+        group: netbox
+        owner: netbox
+        mode: 0755
+      loop:
+        - /opt/media/
+        - /opt/reports/
+        - /opt/scripts/
+
+    - name: ensure netbox symlinks
+      ansible.builtin.file:
+        state: link
+        owner: root
+        group: root
+        mode: 0{{ item.mode }}
+        src: '{{ item.src }}'
+        dest: '{{ item.dest }}'
+      loop:
+        - src: /opt/netbox/contrib/gunicorn.py
+          dest: /opt/netbox/gunicorn.py
+          mode: 644
+        - src: /opt/netbox/contrib/netbox-rq.service
+          dest: /etc/systemd/system/netbox-rq.service
+          mode: 644
+        - src: /opt/netbox/contrib/netbox.service
+          dest: /etc/systemd/system/netbox.service
+          mode: 644
+        - src: /opt/netbox/contrib/netbox-housekeeping.sh
+          dest: /etc/cron.daily/netbox-housekeeping
+          mode: 755
+      notify:
+        - reload systemd daemon
+        - restart netbox
+        - restart netbox-rq
+
+
+    # - name: run netbox upgrade command
+    #   ansible.builtin.command:
+    #     cmd: /opt/netbox/upgrade.sh
+    #     chdir: /opt/netbox
+
+
+    - name: ensure netbox services are enabled and started
+      ansible.builtin.service:
+        name: '{{ item }}'
+        enabled: true
+        state: started
+      loop:
+        - netbox
+        - netbox-rq
+
+    - name: ensure nginx base config
+      ansible.builtin.copy:
+        dest: /etc/nginx/nginx.conf
+        mode: 0644
+        owner: root
+        group: root
+        force: true
+        content: |
+            user www-data;
+            worker_processes auto;
+            pid /run/nginx.pid;
+            include /etc/nginx/modules-enabled/*.conf;
+
+            events {
+              worker_connections 768;
+            }
+
+            http {
+
+              sendfile on;
+              tcp_nopush on;
+              types_hash_max_size 2048;
+
+              include /etc/nginx/mime.types;
+              default_type application/octet-stream;
+
+              ssl_session_timeout 1d;
+              ssl_session_cache shared:MozSSL:10m;  # about 40000 sessions
+              ssl_session_tickets off;
+              ssl_protocols TLSv1.3;
+              ssl_prefer_server_ciphers off;
+
+              access_log /var/log/nginx/access.log;
+              error_log /var/log/nginx/error.log;
+
+              gzip on;
+
+              server {
+                listen 80;
+                listen [::]:80;
+                server_name netbox.internal.haardiek.org;
+                location / {
+                    return 301 https://netbox.internal.haardiek.org;
+                }
+              }
+
+              server {
+                listen 443 ssl http2;
+                listen [::]:443 ssl http2;
+                server_name netbox.internal.haardiek.org;
+                    ssl_certificate /etc/letsencrypt/live/netbox.internal.haardiek.org/fullchain.pem;
+                    ssl_certificate_key /etc/letsencrypt/live/netbox.internal.haardiek.org/privkey.pem;
+                location /static/ {
+                    alias /opt/netbox/netbox/static/;
+                }
+
+                location / {
+                    proxy_pass http://127.0.0.1:8001;
+                    proxy_set_header X-Forwarded-Host $http_host;
+                    proxy_set_header X-Real-IP $remote_addr;
+                    proxy_set_header X-Forwarded-Proto $scheme;
+                }
+
+              }
+            }
+      notify: reload nginx
+
+  handlers:
+    - name: reload systemd daemon
+      command: systemctl daemon-reload
+
+    - name: reload nginx
+      service:
+        name: nginx
+        state: reloaded
+
+    - name: restart netbox
+      service:
+        name: netbox
+        state: restarted
+
+    - name: restart netbox-rq
+      service:
+        name: netbox-rq
+        state: restarted

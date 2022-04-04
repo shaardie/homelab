@@ -29,3 +29,9 @@ jumphost:
       jumphost_state: MASTER
     jumphost02.internal.haardiek.org:
       jumphost_state: BACKUP
+
+netbox:
+  hosts:
+    netbox.internal.haardiek.org:
+      certificates:
+        - netbox.internal.haardiek.org
