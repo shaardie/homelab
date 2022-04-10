@@ -1,0 +1,199 @@
+---
+
+- hosts: provider
+  become: true
+  vars_files:
+    - secret-vars.yml
+    - talos/talosconfig
+  tasks:
+    - name: ensure software
+      ansible.builtin.apt:
+        state: present
+        name:
+          - nginx
+          - dnsmasq
+          - pxelinux
+          - syslinux-common
+
+    - name: ensure directories
+      ansible.builtin.file:
+        state: directory
+        owner: root
+        group: root
+        mode: 0755
+        path: '{{ item }}'
+      loop:
+        - /var/tftp/pxelinux.cfg
+        - /etc/talos
+
+    - name: ensure talos config files
+      ansible.builtin.copy:
+        owner: root
+        group: root
+        mode: 0644
+        dest: /etc/talos/
+        src: '{{ item }}'
+      loop:
+        - talos/controlplane.yaml
+        - talos/worker.yaml
+
+    - name: ensure nginx config
+      ansible.builtin.copy:
+        owner: root
+        group: root
+        mode: 0644
+        dest: /etc/nginx/nginx.conf
+        content: |
+            user www-data;
+            worker_processes auto;
+            pid /run/nginx.pid;
+            include /etc/nginx/modules-enabled/*.conf;
+
+            events {
+              worker_connections 768;
+            }
+
+            http {
+              sendfile on;
+              tcp_nopush on;
+              types_hash_max_size 2048;
+
+              include /etc/nginx/mime.types;
+              default_type application/octet-stream;
+
+              ssl_session_timeout 1d;
+              ssl_session_cache shared:MozSSL:10m;  # about 40000 sessions
+              ssl_session_tickets off;
+              ssl_protocols TLSv1.3;
+              ssl_prefer_server_ciphers off;
+
+              access_log /var/log/nginx/access.log;
+              error_log /var/log/nginx/error.log;
+
+              gzip on;
+
+              server {
+                listen 80;
+                listen [::]:80;
+                server_name provider.internal.haardiek.org;
+                location / {
+                    return 301 https://provider.internal.haardiek.org;
+                }
+              }
+
+              server {
+                listen 443 ssl http2;
+                listen [::]:443 ssl http2;
+                server_name provder.internal.haardiek.org;
+                    ssl_certificate /etc/letsencrypt/live/provider.internal.haardiek.org/fullchain.pem;
+                    ssl_certificate_key /etc/letsencrypt/live/provider.internal.haardiek.org/privkey.pem;
+                location / {
+                    root /etc/talos/;
+                }
+              }
+            }
+      notify: reload nginx
+
+    - name: ensure a systemd-resolved do not listen on 53
+      ansible.builtin.lineinfile:
+        path: /etc/systemd/resolved.conf
+        line: DNSStubListener=no
+        regexp: '^DNSStubListener='
+      notify: restart systemd-resolved
+
+
+    - name: ensure pxelinux.0
+      ansible.builtin.file:
+        state: link
+        owner: root
+        group: root
+        mode: 0755
+        src: '{{ item }}'
+        dest: /var/tftp/{{ item | basename }}
+      loop:
+        - /usr/lib/PXELINUX/pxelinux.0
+        - /usr/lib/syslinux/modules/bios/ldlinux.c32
+
+    - name: ensure talos kernel and initramfs
+      ansible.builtin.get_url:
+        dest: '{{ item.dest }}'
+        owner: root
+        group: root
+        mode: 0644
+        url: '{{ item.url }}'
+        checksum: '{{ item.checksum }}'
+      loop:
+        - url: https://github.com/siderolabs/talos/releases/download/v1.0.1/vmlinuz-amd64
+          checksum: sha256:427037dbf2b48be30140ebe5ceb86e1f3d233756e33fc0a67d3851aa772c91fa
+          dest: /var/tftp/vmlinux
+        - url: https://github.com/siderolabs/talos/releases/download/v1.0.1/initramfs-amd64.xz
+          checksum: sha256:2844dd9831315f6d2106c019d17b3734f89c706d63624cb6909b60e8a662f276
+          dest: /var/tftp/initramfs.xz
+
+    - name: ensure pxeconfig
+      ansible.builtin.copy:
+        dest: /var/tftp/pxelinux.cfg/default
+        owner: root
+        group: root
+        mode: 0644
+        content: |
+            label talos-controlplane
+            kernel vmlinux
+            append initrd=initramfs.xz talos.config=https://provider.internal.haardiek.org/controlplane.yaml talos.platform=metal init_on_alloc=1 slab_nomerge pti=on init_on_free=1
+
+            label talos-worker
+            kernel vmlinux
+            append initrd=initramfs.xz talos.config=https://provider.internal.haardiek.org/worker.yaml talos.platform=metal init_on_alloc=1 slab_nomerge pti=on init_on_free=1
+
+            default talos-worker
+
+    - name: ensure controlplane config
+      ansible.builtin.copy:
+        dest: /var/tftp/pxelinux.cfg/{{ item | ansible.netcommon.ip4_hex | upper }}
+        owner: root
+        group: root
+        mode: 0644
+        content: |
+            include pxelinux.cfg/default
+            default talos-controlplane
+      loop: '{{ contexts["talos-cluster"].endpoints }}'
+
+    - name: ensure dnsmasq config
+      ansible.builtin.copy:
+        force: true
+        owner: root
+        group: root
+        mode: 0644
+        dest: /etc/dnsmasq.conf
+        content: |
+            port=0
+            dhcp-range=192.168.1.0,proxy
+            pxe-service=x86PC, "pxelinux.0", pxelinux
+            enable-tftp
+            tftp-root=/var/tftp
+      notify: restart dnsmasq
+
+    - name: ensure dnsmasq is enabled and started
+      service:
+        name: dnsmasq
+        state: started
+        enabled: true
+
+  handlers:
+    - name: reload systemd daemon
+      command: systemctl daemon-reload
+
+    - name: reload nginx
+      service:
+        name: nginx
+        state: reloaded
+
+    - name: restart systemd-resolved
+      service:
+        name: systemd-resolved
+        state: restarted
+
+    - name: restart dnsmasq
+      service:
+        name: dnsmasq
+        state: restarted

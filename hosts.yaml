@@ -35,3 +35,9 @@ netbox:
     netbox.internal.haardiek.org:
       certificates:
         - netbox.internal.haardiek.org
+
+provider:
+  hosts:
+    provider.internal.haardiek.org:
+      certificates:
+        - provider.internal.haardiek.org
