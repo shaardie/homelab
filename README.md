@@ -20,7 +20,12 @@ sven@tailscale:~$ sudo tailscale up --accept-dns --accept-routes --advertise-rou
 
 ```bash
 ❯ ansible-playbook deploy-docker-server.yml
-
-
-### Docker Services
+```bash
+# Copy Sources
+❯ rsync -avh --delete . sven@docker.internal.haardiek.org:homelab
+# Caddy
+sven@docker:~/homelab/caddy$ docker compose build --pull
+sven@docker:~/homelab/caddy$ docker compose up -d 
+# Grocy
+sven@docker:~/homelab/grocy-docker$ docker compose up -d 
 ```
