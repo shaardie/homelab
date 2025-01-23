@@ -1,0 +1,52 @@
+---
+- name: Verify galaxy roles
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  roles:
+    - lkiesow.verify_galaxy_versions
+
+- name: Deploy Docker Server
+  hosts: docker
+  become: true
+  roles:
+    - role: user_setup
+      user_setup_admins:
+        - name: sven
+          key: file:ssh-keys/sven.pub
+    - role: secure_sshd
+    - role: unattended_upgrades
+
+  tasks:
+    - name: Install tools
+      ansible.builtin.package:
+        name:
+          - bind9-utils
+          - tcpdump
+          - gnupg
+          - rsync
+
+    - name: Add an Apt signing key to a specific keyring file
+      ansible.builtin.apt_key:
+        url: https://download.docker.com/linux/debian/gpg
+        keyring: /usr/share/keyrings/docker.gpg
+
+    - name: Docker apt repository
+      ansible.builtin.apt_repository:
+        repo: deb [arch=amd64 signed-by=/usr/share/keyrings/docker.gpg] https://download.docker.com/linux/debian bookworm stable
+        state: present
+
+    - name: Install Docker
+      ansible.builtin.package:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-buildx-plugin
+          - docker-compose-plugin
+
+    - name: Add sven to docker group
+      ansible.builtin.user:
+        name: sven
+        groups: docker
+        append: yes
