@@ -1,0 +1,114 @@
+---
+- name: Verify galaxy roles
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  roles:
+    - lkiesow.verify_galaxy_versions
+
+- name: Deploy Tailscale Server
+  hosts: tailscale
+  become: true
+  roles:
+    - role: user_setup
+      user_setup_admins:
+        - name: sven
+          key: file:ssh-keys/sven.pub
+    - role: secure_sshd
+
+  tasks:
+    - name: Install tools
+      ansible.builtin.package:
+        name:
+          - bind9-utils
+          - tcpdump
+          - gnupg
+          - ethtool
+
+    - name: Add an Apt signing key to a specific keyring file
+      ansible.builtin.apt_key:
+        url: https://pkgs.tailscale.com/stable/debian/bookworm.noarmor.gpg
+        keyring: /usr/share/keyrings/tailscale-archive-keyring.gpg
+
+    - name: Tailscale apt repository
+      ansible.builtin.apt_repository:
+        repo: "deb [signed-by=/usr/share/keyrings/tailscale-archive-keyring.gpg] https://pkgs.tailscale.com/stable/debian bookworm main"
+        state: present
+
+    # Headscale
+    - name: Install tailscale
+      ansible.builtin.package:
+        name: tailscale
+
+    # Automatic Updates
+    - name: Install unattended upgrades
+      ansible.builtin.package:
+        name: unattended-upgrades
+
+    - name: Apply unattended upgrades config
+      ansible.builtin.copy:
+        dest: /etc/apt/apt.conf.d/50unattended-upgrades
+        owner: root
+        group: root
+        mode: "0644"
+        force: true
+        content: |
+          Unattended-Upgrade::Origins-Pattern {
+            "origin=Debian,codename=${distro_codename},label=Debian";
+            "origin=Debian,codename=${distro_codename},label=Debian-Security";
+            "origin=Debian,codename=${distro_codename}-security,label=Debian-Security";
+          };
+
+          Unattended-Upgrade::Package-Blacklist {
+          };
+          Unattended-Upgrade::Automatic-Reboot "true";
+
+    - name: Enable unattended upgrades
+      ansible.builtin.copy:
+        dest: /etc/apt/apt.conf.d/20auto-upgrades
+        owner: root
+        group: root
+        mode: "0644"
+        force: true
+        content: |
+          APT::Periodic::Update-Package-Lists "1";
+          APT::Periodic::Unattended-Upgrade "1";
+
+    - name: Forward IP
+      ansible.builtin.copy:
+        dest: /etc/sysctl.d/99-tailscale.conf
+        owner: root
+        group: root
+        mode: "0644"
+        force: true
+        content: |
+          net.ipv4.ip_forward = 1
+          net.ipv6.conf.all.forwarding = 1
+
+    - name: Sysctl directly
+      ansible.builtin.command: sysctl -p /etc/sysctl.d/99-tailscale.conf
+
+    - name: Setup networking
+      ansible.builtin.copy:
+        dest: /etc/network/interfaces
+        owner: root
+        group: root
+        mode: "0644"
+        force: true
+        content: |
+
+          auto lo
+          iface lo inet loopback
+
+          auto eth0
+          iface eth0 inet static
+            address 10.0.0.2/30
+            gateway 10.0.0.1
+            up ethtool -K eth0 rx-udp-gro-forwarding on rx-gro-list off
+      notify: Restart network
+
+  handlers:
+    - name: Restart network
+      ansible.builtin.service:
+        name: networking
+        state: restarted

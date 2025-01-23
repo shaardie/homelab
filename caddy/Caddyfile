@@ -1,0 +1,10 @@
+{
+    email sven@haardiek.de
+    cert_issuer acme {
+        dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+    }
+}
+
+grocy.internal.haardiek.org {
+    reverse_proxy grocy-docker-frontend-1:8080
+}
