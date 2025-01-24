@@ -1,2 +1,3 @@
 caddy/env filter=git-crypt diff=git-crypt
+postgresql/env filter=git-crypt diff=git-crypt
 config-OPNsense.*.xml filter=git-crypt diff=git-crypt
