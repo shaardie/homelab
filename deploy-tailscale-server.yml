@@ -25,6 +25,8 @@
           - tcpdump
           - gnupg
           - ethtool
+          - dnsmasq
+          - bird2
 
     - name: Add an Apt signing key to a specific keyring file
       ansible.builtin.apt_key:
@@ -74,8 +76,75 @@
             up ethtool -K eth0 rx-udp-gro-forwarding on rx-gro-list off
       notify: Restart network
 
+    - name: Copy Tailscale Post Script
+      ansible.builtin.copy:
+        dest: /opt/tailscale-post.sh
+        src: files/tailscale-post.sh
+        owner: root
+        group: root
+        mode: "0755"
+        force: true
+
+    - name: Ensure Systemd Override Directory for Tailscale
+      ansible.builtin.file:
+        path: /etc/systemd/system/tailscaled.service.d
+        state: directory
+        recurse: true
+        owner: root
+        group: root
+        mode: "0755"
+        force: true
+
+    - name: Outgoing SNAT for Tailscale
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/tailscaled.service.d/override.conf
+        owner: root
+        group: root
+        mode: "0644"
+        force: true
+        content: |
+          [Service]
+          ExecStartPost=/opt/tailscale-post.sh
+      notify: Restart tailscaled
+
+    - name: Dnsmasq Config
+      ansible.builtin.copy:
+        dest: /etc/dnsmasq.conf
+        src: files/dnsmasq.conf
+        owner: root
+        group: root
+        mode: "0755"
+        force: true
+      notify: Restart dnsmasq
+
+    - name: Bird Config
+      ansible.builtin.copy:
+        dest: /etc/bird/bird.conf
+        src: files/bird.conf
+        owner: bird
+        group: bird
+        mode: "0640"
+        force: true
+      notify: Restart bird
+
   handlers:
     - name: Restart network
       ansible.builtin.service:
         name: networking
+        state: restarted
+
+    - name: Restart dnsmasq
+      ansible.builtin.service:
+        name: dnsmasq
+        state: restarted
+
+    - name: Restart bird
+      ansible.builtin.service:
+        name: bird
+        state: restarted
+
+    - name: Restart tailscaled
+      ansible.builtin.systemd_service:
+        name: tailscaled
+        daemon_reload: true
         state: restarted
