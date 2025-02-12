@@ -16,4 +16,4 @@ while true; do
   sleep 0.5
 done
 
-iptables -t nat -A ts-postrouting -o tailscale0 -m mark --mark 0x40000/0xff0000 -j MASQUERADE
+iptables -t nat -A ts-postrouting -o tailscale0 -j MASQUERADE
