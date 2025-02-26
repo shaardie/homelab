@@ -17,3 +17,7 @@ proxmox.internal.haardiek.org {
     }
   }
 }
+
+paperless.internal.haardiek.org {
+  reverse_proxy paperless-ngx-webserver-1:8000
+}
