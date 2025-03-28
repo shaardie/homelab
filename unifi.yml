@@ -1,0 +1,52 @@
+---
+- name: Verify galaxy roles
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  roles:
+    - lkiesow.verify_galaxy_versions
+
+- name: Deploy UnifiServer
+  hosts: unifi
+  become: true
+  roles:
+    - role: user_setup
+      user_setup_admins:
+        - name: sven
+          key: file:ssh-keys/sven.pub
+    - role: secure_sshd
+    - role: unattended_upgrades
+
+  tasks:
+    - name: Install tools
+      ansible.builtin.package:
+        name:
+          - ca-certificates
+          - apt-transport-https
+          - gnupg
+          - curl
+
+    - name: Add an Apt signing key to a specific keyring file
+      ansible.builtin.apt_key:
+        url: https://dl.ui.com/unifi/unifi-repo.gpg
+        keyring: /etc/apt/trusted.gpg.d/unifi-repo.gpg
+
+    - name: Add an Apt signing key to a specific keyring file
+      ansible.builtin.apt_key:
+        url: https://www.mongodb.org/static/pgp/server-8.0.asc
+        keyring: /usr/share/keyrings/mongodb-server-8.0.gpg
+
+    - name: Unifi apt repository
+      ansible.builtin.apt_repository:
+        repo: deb [ arch=amd64,arm64 ] https://www.ui.com/downloads/unifi/debian stable ubiquiti
+        state: present
+
+    - name: MongoDB apt repository
+      ansible.builtin.apt_repository:
+        repo: deb [ signed-by=/usr/share/keyrings/mongodb-server-8.0.gpg ] http://repo.mongodb.org/apt/debian bookworm/mongodb-org/8.0 main
+        state: present
+
+    - name: Install Docker
+      ansible.builtin.package:
+        name:
+          - unifi
