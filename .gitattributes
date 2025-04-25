@@ -1,5 +1,5 @@
 caddy/env filter=git-crypt diff=git-crypt
 postgresql/env filter=git-crypt diff=git-crypt
 config-OPNsense.*.xml filter=git-crypt diff=git-crypt
-filter=git-crypt diff=git-crypt
 paperless-ngx/docker-compose.env filter=git-crypt diff=git-crypt
+acme-dns.yml filter=git-crypt diff=git-crypt
