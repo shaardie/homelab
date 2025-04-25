@@ -30,3 +30,7 @@ unifi.internal.haardiek.org {
 paperless.internal.haardiek.org {
   reverse_proxy paperless-ngx-webserver-1:8000
 }
+
+kuma.internal.haardiek.org {
+  reverse_proxy kuma-uptime-kuma-1:3001
+}
