@@ -1,15 +1,14 @@
-{
-  email sven@haardiek.de
-  cert_issuer acme {
-    dns cloudflare {env.CLOUDFLARE_API_TOKEN}
-  }
-}
-
 grocy.internal.haardiek.org {
+  tls {
+    dns acmedns /acme-dns.json
+  }
   reverse_proxy grocy-docker-frontend-1:8080
 }
 
 proxmox.internal.haardiek.org {
+  tls {
+    dns acmedns /acme-dns.json
+  }
   reverse_proxy pve.internal.haardiek.org:8006 {
     transport http {
       tls
@@ -19,6 +18,9 @@ proxmox.internal.haardiek.org {
 }
 
 unifi.internal.haardiek.org {
+  tls {
+    dns acmedns /acme-dns.json
+  }
   reverse_proxy unifi-internal.internal.haardiek.org:8443 {
     transport http {
       tls
@@ -28,9 +30,16 @@ unifi.internal.haardiek.org {
 }
 
 paperless.internal.haardiek.org {
+  tls {
+    dns acmedns /acme-dns.json
+  }
   reverse_proxy paperless-ngx-webserver-1:8000
 }
 
+
 kuma.internal.haardiek.org {
+  tls {
+    dns acmedns /acme-dns.json
+  }
   reverse_proxy kuma-uptime-kuma-1:3001
 }
