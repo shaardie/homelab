@@ -1,0 +1,22 @@
+$TTL 300
+@ IN SOA ns1.haardiek.org. admin.haardiek.org. (
+        {{ ansible_date_time.epoch }} ; Serial (Unix Timestamp)
+        3600       ; Refresh
+        1800       ; Retry
+        604800     ; Expire
+        300        ; Minimum TTL
+)
+
+;; NS Records
+@        IN NS ns1.haardiek.org.
+
+;; A Records
+ns1      IN A 188.68.52.102
+
+;; AAAA Records
+ns1      IN AAAA 2a03:4000:6:ecfd:74d8:fdff:feea:c71c
+
+;; CNAME Records
+blog                IN CNAME shaardie.github.io.
+k8s-restarter-chart IN CNAME shaardie.github.io.
+stolon-chart        IN CNAME shaardie.github.io.

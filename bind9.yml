@@ -1,0 +1,44 @@
+---
+- name: Verify galaxy roles
+  hosts: localhost
+  connection: local
+  gather_facts: false
+  roles:
+    - lkiesow.verify_galaxy_versions
+
+- name: Deploy bind9 Server
+  hosts: bind9
+  become: true
+  roles:
+    - role: user_setup
+      user_setup_admins:
+        - name: sven
+          key: file:ssh-keys/sven.pub
+    - role: secure_sshd
+    - role: unattended_upgrades
+
+  tasks:
+    - name: Install tools
+      ansible.builtin.package:
+        name:
+          - bind9
+
+    - name: apply {{ item }}
+      ansible.builtin.template:
+        src: bind9/{{ item }}
+        dest: /etc/bind/{{ item }}
+        owner: root
+        group: bind
+        mode: '0644'
+      loop:
+        - named.conf.options
+        - named.conf.local
+        - db.haardiek.org
+        - key.haardiek.org
+      notify: reload bind9
+
+  handlers:
+    - name: reload bind9
+      service:
+        name: bind9
+        state: reloaded
