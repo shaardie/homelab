@@ -20,3 +20,11 @@ ns1      IN AAAA 2a03:4000:6:ecfd:74d8:fdff:feea:c71c
 blog                IN CNAME shaardie.github.io.
 k8s-restarter-chart IN CNAME shaardie.github.io.
 stolon-chart        IN CNAME shaardie.github.io.
+
+;; TXT Records
+b224bb7ab6468cbae16dff6ac53508808a0f8d34 IN TXT "f381ce6c421ef32beba9856f50155b4d3453d84f" ; mailbox.org verification
+
+;; MX Records
+haardiek.org. IN MX 10 mxext1.mailbox.org.
+haardiek.org. IN MX 10 mxext2.mailbox.org.
+haardiek.org. IN MX 20 mxext3.mailbox.org.
