@@ -1,7 +1,7 @@
 include "/etc/bind/key.haardiek.org";
 zone "haardiek.org" {
     type master;
-    file "/etc/bind/db.haardiek.org";
+    file "/var/lib/bind/db.haardiek.org";
     allow-transfer { none; };
     allow-update { key "haardiek.org"; };
 };
