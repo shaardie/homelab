@@ -23,18 +23,27 @@
         name:
           - bind9
 
-    - name: apply {{ item }}
+    - name: apply config file {{ item }}
       ansible.builtin.template:
         src: bind9/{{ item }}
         dest: /etc/bind/{{ item }}
         owner: root
         group: bind
-        mode: '0644'
+        mode: "0640"
       loop:
         - named.conf.options
         - named.conf.local
-        - db.haardiek.org
         - key.haardiek.org
+      notify: reload bind9
+
+    - name: apply zone file {{ item }}
+      ansible.builtin.template:
+        src: bind9/{{ item }}
+        dest: /var/lib/bind/{{ item }}
+        owner: bind
+        group: bind
+      loop:
+        - db.haardiek.org
       notify: reload bind9
 
   handlers:
