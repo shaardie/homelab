@@ -1,0 +1,16 @@
+services:
+  listinator:
+    image: ghcr.io/hacky-day/listinator:latest
+    environment:
+      LISTINATOR_DATABASE_DIR: /var/lib/listinator
+    volumes:
+      - data:/var/lib/listinator
+    networks:
+      - proxy
+
+volumes:
+  data:
+
+networks:
+  proxy:
+    external: true

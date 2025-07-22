@@ -29,3 +29,15 @@ paperless.internal.haardiek.org {
 kuma.internal.haardiek.org {
   reverse_proxy kuma-uptime-kuma-1:3001
 }
+
+audiobookshelf.internal.haardiek.org {
+  reverse_proxy audiobookshelf-audiobookshelf-1:80
+}
+
+immich.internal.haardiek.org {
+  reverse_proxy immich-immich-server-1:2283
+}
+
+listinator.internal.haardiek.org {
+  reverse_proxy listinator-listinator-1:8080
+}
