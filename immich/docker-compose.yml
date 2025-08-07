@@ -2,7 +2,7 @@ services:
   immich-server:
     image: ghcr.io/immich-app/immich-server:${IMMICH_VERSION:-release}
     volumes:
-      - /mnt/hetzner/:/usr/src/app/upload
+      - /mnt/immich/:/usr/src/app/upload
       - /etc/localtime:/etc/localtime:ro
     env_file:
       - .env
