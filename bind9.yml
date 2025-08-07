@@ -23,7 +23,7 @@
         name:
           - bind9
 
-    - name: apply config file {{ item }}
+    - name: apply config file
       ansible.builtin.template:
         src: bind9/{{ item }}
         dest: /etc/bind/{{ item }}
@@ -34,9 +34,10 @@
         - named.conf.options
         - named.conf.local
         - key.haardiek.org
+        - key.listinator.org
       notify: reload bind9
 
-    - name: apply zone file {{ item }}
+    - name: apply zone file
       ansible.builtin.template:
         src: bind9/{{ item }}
         dest: /var/lib/bind/{{ item }}
@@ -44,6 +45,7 @@
         group: bind
       loop:
         - db.haardiek.org
+        - db.listinator.org
       notify: reload bind9
 
   handlers:

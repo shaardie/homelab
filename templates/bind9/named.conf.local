@@ -5,3 +5,11 @@ zone "haardiek.org" {
     allow-transfer { none; };
     allow-update { key "haardiek.org"; };
 };
+
+include "/etc/bind/key.listinator.org";
+zone "listinator.org" {
+    type master;
+    file "/var/lib/bind/db.listinator.org";
+    allow-transfer { none; };
+    allow-update { key "listinator.org"; };
+};
