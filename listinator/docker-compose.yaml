@@ -2,8 +2,8 @@ services:
   listinator:
     image: ghcr.io/hacky-day/listinator:latest
     restart: unless-stopped
-    environment:
-      LISTINATOR_DATABASE_DIR: /var/lib/listinator
+    env_file:
+      - .env
     volumes:
       - data:/var/lib/listinator
     networks:
