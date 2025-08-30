@@ -1,0 +1,3 @@
+listinator.org {
+    reverse_proxy listinator:8080
+}

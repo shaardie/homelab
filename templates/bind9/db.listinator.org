@@ -12,6 +12,7 @@ $TTL 300
 
 ;; A Records
 ns1      IN A 188.68.52.102
+@        IN A 159.195.7.109
 
 ;; AAAA Records
 ns1      IN AAAA 2a03:4000:6:ecfd:74d8:fdff:feea:c71c

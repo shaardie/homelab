@@ -27,13 +27,14 @@
           - rsync
 
     - name: Add an Apt signing key to a specific keyring file
-      ansible.builtin.apt_key:
+      ansible.builtin.get_url:
         url: https://download.docker.com/linux/debian/gpg
-        keyring: /usr/share/keyrings/docker.gpg
+        dest: /etc/apt/trusted.gpg.d/docker.asc
+        mode: '0644'
 
     - name: Docker apt repository
       ansible.builtin.apt_repository:
-        repo: deb [arch=amd64 signed-by=/usr/share/keyrings/docker.gpg] https://download.docker.com/linux/debian bookworm stable
+        repo: deb https://download.docker.com/linux/debian trixie stable
         state: present
 
     - name: Install Docker
