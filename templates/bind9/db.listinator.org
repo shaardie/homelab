@@ -1,6 +1,6 @@
 $TTL 300
 @ IN SOA ns1.listinator.org. admin.listinator.org. (
-        {{ ansible_date_time.epoch }} ; Serial (Unix Timestamp)
+        {{ ansible_facts['date_time']['epoch'] }} ; Serial (Unix Timestamp)
         3600       ; Refresh
         1800       ; Retry
         604800     ; Expire

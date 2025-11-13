@@ -34,7 +34,7 @@
         - named.conf.options
         - named.conf.local
         - key.haardiek.org
-        - key.listinator.org
+        - db.listinator.org
       notify: reload bind9
 
     - name: apply zone file
@@ -43,13 +43,14 @@
         dest: /var/lib/bind/{{ item }}
         owner: bind
         group: bind
+        mode: "0640"
+        force: false
       loop:
         - db.haardiek.org
-        - db.listinator.org
       notify: reload bind9
 
   handlers:
     - name: reload bind9
       service:
         name: bind9
-        state: restarted  # unfortunately we need to restart due to dynamic
+        state: reloaded
