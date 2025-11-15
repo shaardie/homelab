@@ -1,0 +1,29 @@
+server 127.0.0.1
+zone haardiek.org
+
+update delete ns1.haardiek.org A
+update add ns1.haardiek.org 300 A 188.68.52.102
+
+update delete ns1.haardiek.org AAAA
+update add ns1.haardiek.org 300 AAAA 2a03:4000:6:ecfd:74d8:fdff:feea:c71c
+
+update delete blog.haardiek.org CNAME
+update add blog.haardiek.org 300 CNAME shaardie.github.io.
+
+update delete k8s-restarter-chart.haardiek.org CNAME
+update add k8s-restarter-chart.haardiek.org 300 CNAME shaardie.github.io.
+
+update delete stolon-chart.haardiek.org CNAME
+update add stolon-chart.haardiek.org 300 CNAME shaardie.github.io.
+
+update delete b224bb7ab6468cbae16dff6ac53508808a0f8d34.haardiek.org TXT
+update add b224bb7ab6468cbae16dff6ac53508808a0f8d34.haardiek.org 300 TXT "f381ce6c421ef32beba9856f50155b4d3453d84f"
+
+update delete haardiek.org MX
+update add haardiek.org 300 MX 10 mxext1.mailbox.org.
+update add haardiek.org 300 MX 10 mxext2.mailbox.org.
+update add haardiek.org 300 MX 20 mxext3.mailbox.org.
+
+show
+
+send
