@@ -23,7 +23,7 @@
         name:
           - bind9
 
-    - name: apply config file
+    - name: Copy config files and static zone files
       ansible.builtin.template:
         src: bind9/{{ item }}
         dest: /etc/bind/{{ item }}
@@ -35,9 +35,8 @@
         - named.conf.local
         - key.haardiek.org
         - db.listinator.org
-      notify: reload bind9
 
-    - name: apply zone file
+    - name: Init dynamic zones
       ansible.builtin.template:
         src: bind9/{{ item }}
         dest: /var/lib/bind/{{ item }}
@@ -47,10 +46,22 @@
         force: false
       loop:
         - db.haardiek.org
-      notify: reload bind9
 
-  handlers:
-    - name: reload bind9
+    - name: Copy nsupdate file of haardiek.org
+      ansible.builtin.template:
+        src: bind9/nsupdate.haardiek.org
+        dest: /etc/bind/nsupdate.haardiek.org
+        owner: root
+        group: bind
+        mode: "0640"
+      register: nsupdate_haardiek_org
+
+    - name: Reload bind9
       service:
         name: bind9
         state: reloaded
+
+    - name: Apply DNS updates via nsupdate for haardiek.org
+      ansible.builtin.command:
+        cmd: nsupdate -k "/etc/bind/key.haardiek.org" "/etc/bind/nsupdate.haardiek.org"
+      when: nsupdate_haardiek_org.changed
