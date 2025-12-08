@@ -1,0 +1,48 @@
+{
+	log {
+		format console
+	}
+	import /etc/caddy/nsupdate.caddy
+}
+
+grocy.internal.haardiek.org {
+	reverse_proxy grocy-docker-frontend-1:8080
+}
+
+proxmox.internal.haardiek.org {
+	reverse_proxy pve.internal.haardiek.org:8006 {
+		transport http {
+			tls
+			tls_insecure_skip_verify
+		}
+	}
+}
+
+unifi.internal.haardiek.org {
+	reverse_proxy unifi-internal.internal.haardiek.org:8443 {
+		transport http {
+			tls
+			tls_insecure_skip_verify
+		}
+	}
+}
+
+paperless.internal.haardiek.org {
+	reverse_proxy paperless-ngx-webserver-1:8000
+}
+
+kuma.internal.haardiek.org {
+	reverse_proxy kuma-uptime-kuma-1:3001
+}
+
+audiobookshelf.internal.haardiek.org {
+	reverse_proxy audiobookshelf-audiobookshelf-1:80
+}
+
+immich.internal.haardiek.org {
+	reverse_proxy immich-immich-server-1:2283
+}
+
+listinator.internal.haardiek.org {
+	reverse_proxy listinator-listinator-1:8080
+}
