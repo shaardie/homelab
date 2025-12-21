@@ -25,6 +25,8 @@
           - tcpdump
           - gnupg
           - rsync
+          - restic
+          - curl
 
     - name: Add an Apt signing key to a specific keyring file
       ansible.builtin.get_url:
@@ -51,3 +53,13 @@
         name: sven
         groups: docker
         append: yes
+
+    - name: Install daily backup script
+      copy:
+        src: "{{ inventory_hostname }}_backup.sh"
+        dest: /etc/cron.daily/backup
+        mode: '0700'
+        owner: root
+        group: root
+      when: lookup('file', 'files/{}_backup.sh'.format(inventory_hostname), errors='ignore') is not none
+

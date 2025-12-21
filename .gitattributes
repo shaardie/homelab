@@ -6,3 +6,4 @@ paperless-ngx/docker-compose.env filter=git-crypt diff=git-crypt
 acme-dns.yml filter=git-crypt diff=git-crypt
 templates/bind9/key.haardiek.org filter=git-crypt diff=git-crypt
 templates/bind9/key.listinator.org filter=git-crypt diff=git-crypt
+files/docker.internal.haardiek.org_backup.sh filter=git-crypt diff=git-crypt
