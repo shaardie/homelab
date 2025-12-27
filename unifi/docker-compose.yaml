@@ -1,0 +1,22 @@
+services:
+  unifi:
+    image: jacobalberty/unifi:v10.0
+    volumes:
+      - data:/unifi/data
+      - logs:/unifi/logs
+    restart: unless-stopped
+    environment:
+      TZ: Europe/Berlin
+    ports:
+      - 3478:3478/udp
+      - 8080:8080
+    networks:
+      - proxy
+
+volumes:
+  data:
+  logs:
+
+networks:
+  proxy:
+    external: true

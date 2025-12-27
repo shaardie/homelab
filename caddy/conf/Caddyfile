@@ -19,7 +19,7 @@ proxmox.internal.haardiek.org {
 }
 
 unifi.internal.haardiek.org {
-	reverse_proxy unifi-internal.internal.haardiek.org:8443 {
+	reverse_proxy unifi-unifi-1:8443 {
 		transport http {
 			tls
 			tls_insecure_skip_verify

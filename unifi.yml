@@ -15,7 +15,7 @@
         - name: sven
           key: file:ssh-keys/sven.pub
     - role: secure_sshd
-    - role: unattended_upgrades
+    - role: apt_autoupdate
 
   tasks:
     - name: Install tools
