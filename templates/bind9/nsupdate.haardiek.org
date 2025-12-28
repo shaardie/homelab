@@ -4,6 +4,9 @@ zone haardiek.org
 update delete ns1.haardiek.org A
 update add ns1.haardiek.org 300 A 188.68.52.102
 
+update delete proxy.haardiek.org A
+update add proxy.haardiek.org 300 A 152.53.207.178
+
 update delete ns1.haardiek.org AAAA
 update add ns1.haardiek.org 300 AAAA 2a03:4000:6:ecfd:74d8:fdff:feea:c71c
 
