@@ -1,5 +1,6 @@
 caddy/conf/nsupdate.caddy filter=git-crypt diff=git-crypt
 immich/.env filter=git-crypt diff=git-crypt
+hedgedoc/.env filter=git-crypt diff=git-crypt
 listinator/.env filter=git-crypt diff=git-crypt
 config-OPNsense.*.xml filter=git-crypt diff=git-crypt
 paperless-ngx/docker-compose.env filter=git-crypt diff=git-crypt

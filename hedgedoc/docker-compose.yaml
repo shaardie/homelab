@@ -1,0 +1,32 @@
+services:
+  database:
+    image: postgres:17.7-alpine
+    env_file:
+      - .env
+    volumes:
+      - database:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - internal
+  app:
+    # Make sure to use the latest release from https://hedgedoc.org/latest-release
+    image: quay.io/hedgedoc/hedgedoc:1.10.5
+    env_file:
+      - .env
+    volumes:
+      - uploads:/hedgedoc/public/uploads
+    restart: unless-stopped
+    depends_on:
+      - database
+    networks:
+      - proxy
+      - internal
+
+volumes:
+  database:
+  uploads:
+
+networks:
+  internal:
+  proxy:
+    external: true

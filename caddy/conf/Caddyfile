@@ -46,3 +46,7 @@ immich.internal.haardiek.org {
 listinator.internal.haardiek.org {
 	reverse_proxy listinator-listinator-1:8080
 }
+
+hedgedoc.internal.haardiek.org {
+    reverse_proxy hedgedoc-app-1:3000
+}
