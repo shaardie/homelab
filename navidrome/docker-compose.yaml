@@ -1,0 +1,27 @@
+services:
+  navidrome:
+    # https://github.com/navidrome/navidrome
+    image: deluan/navidrome:latest
+    restart: unless-stopped
+    volumes:
+      - "data:/data"
+      - "downloads:/music:ro"
+    networks:
+      - proxy
+  deezer-downloader:
+    #https://github.com/kmille/deezer-downloader
+    image: kmille2/deezer-downloader:latest
+    env_file:
+      - docker-compose.env
+    volumes:
+      - downloads:/mnt/deezer-downloader
+    networks:
+      - proxy
+
+volumes:
+  data:
+  downloads:
+
+networks:
+  proxy:
+    external: true

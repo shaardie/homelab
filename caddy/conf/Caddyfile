@@ -50,3 +50,13 @@ listinator.internal.haardiek.org {
 hedgedoc.internal.haardiek.org {
     reverse_proxy hedgedoc-app-1:3000
 }
+
+navidrome.internal.haardiek.org {
+    reverse_proxy navidrome-navidrome-1:4533
+}
+
+deezer-downloader.internal.haardiek.org {
+    @blocked not remote_ip 192.168.10.0/24
+    respond @blocked 403
+    reverse_proxy navidrome-deezer-downloader-1:5000
+}
