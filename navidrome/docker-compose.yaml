@@ -11,6 +11,7 @@ services:
   deezer-downloader:
     #https://github.com/kmille/deezer-downloader
     image: kmille2/deezer-downloader:latest
+    restart: unless-stopped
     env_file:
       - docker-compose.env
     volumes:
