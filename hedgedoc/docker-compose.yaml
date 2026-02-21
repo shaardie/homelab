@@ -1,6 +1,6 @@
 services:
   database:
-    image: postgres:17.7-alpine
+    image: postgres:17.8-alpine
     env_file:
       - .env
     volumes:
@@ -9,8 +9,8 @@ services:
     networks:
       - internal
   app:
-    # Make sure to use the latest release from https://hedgedoc.org/latest-release
-    image: quay.io/hedgedoc/hedgedoc:1.10.5
+    # https://github.com/hedgedoc/hedgedoc
+    image: quay.io/hedgedoc/hedgedoc:1.10.6
     env_file:
       - .env
     volumes:
