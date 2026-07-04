@@ -8,7 +8,7 @@ services:
       - data:/var/lib/listinator
 
   caddy:
-    image: caddy:2
+    build: .
     restart: unless-stopped
     cap_add:
       - NET_ADMIN
@@ -17,7 +17,6 @@ services:
       - "443:443"
       - "443:443/udp"
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
 
