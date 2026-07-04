@@ -11,7 +11,9 @@ $TTL 300
 @        IN NS ns1.haardiek.org.
 
 ;; A Records
-ns1      IN A 188.68.52.102
+ns1      IN A 193.31.24.232
+ns2      IN A 193.31.24.232
 
 ;; AAAA Records
-ns1      IN AAAA 2a03:4000:6:ecfd:74d8:fdff:feea:c71c
+ns1      IN AAAA 2a03:4000:2b:1875:68c2:fcff:fec7:f8af
+ns2      IN AAAA 2a03:4000:2b:1875:68c2:fcff:fec7:f8af
