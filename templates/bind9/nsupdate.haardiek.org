@@ -2,13 +2,19 @@ server 127.0.0.1
 zone haardiek.org
 
 update delete ns1.haardiek.org A
-update add ns1.haardiek.org 300 A 188.68.52.102
+update add ns1.haardiek.org 300 A 193.31.24.232
+
+update delete ns2.haardiek.org A
+update add ns2.haardiek.org 300 A 193.31.24.232
 
 update delete proxy.haardiek.org A
 update add proxy.haardiek.org 300 A 152.53.207.178
 
 update delete ns1.haardiek.org AAAA
-update add ns1.haardiek.org 300 AAAA 2a03:4000:6:ecfd:74d8:fdff:feea:c71c
+update add ns1.haardiek.org 300 AAAA 2a03:4000:2b:1875:68c2:fcff:fec7:f8af
+
+update delete ns2.haardiek.org AAAA
+update add ns1.haardiek.org 300 AAAA 2a03:4000:2b:1875:68c2:fcff:fec7:f8af
 
 update delete blog.haardiek.org CNAME
 update add blog.haardiek.org 300 CNAME shaardie.github.io.
