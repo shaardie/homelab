@@ -2,10 +2,13 @@ server 127.0.0.1
 zone haardiek.org
 
 update delete proxy.haardiek.org A
-update add proxy.haardiek.org 300 A 152.53.207.178
+update add proxy.haardiek.org 300 A 45.136.31.20
 
 update delete blog.haardiek.org CNAME
 update add blog.haardiek.org 300 CNAME shaardie.github.io.
+
+update delete immich-frame.haardiek.org CNAME
+update add immich-frame.haardiek.org 300 CNAME proxy.haardiek.org.
 
 update delete k8s-restarter-chart.haardiek.org CNAME
 update add k8s-restarter-chart.haardiek.org 300 CNAME shaardie.github.io.
