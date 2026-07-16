@@ -1,0 +1,15 @@
+immich-frame.haardiek.org, https://45.136.31.20 {
+  encode gzip
+  tls {
+    issuer acme
+    issuer internal
+  }
+
+  reverse_proxy https://immich-frame.internal.haardiek.org {
+    header_up Host immich-frame.internal.haardiek.org
+    transport http {
+      tls_server_name immich-frame.internal.haardiek.org
+      tls_insecure_skip_verify
+    }
+  }
+}

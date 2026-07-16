@@ -49,6 +49,19 @@ services:
     networks:
       - internal
 
+  immichframe:
+    image: ghcr.io/immichframe/immichframe:latest
+    restart: on-failure
+    environment:
+      TZ: "Europe/Berlin"
+    env_file:
+      - .immichframe.env
+    depends_on:
+      - immich-server
+    networks:
+      - internal
+      - proxy
+
 volumes:
   model-cache:
   postgres:

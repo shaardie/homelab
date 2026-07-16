@@ -43,6 +43,14 @@ immich.internal.haardiek.org {
 	reverse_proxy immich-immich-server-1:2283
 }
 
+immich-frame.internal.haardiek.org {
+  tls {
+    issuer acme
+    issuer internal
+  }
+	reverse_proxy immich-immichframe-1:8080
+}
+
 listinator.internal.haardiek.org {
 	reverse_proxy listinator-listinator-1:8080
 }
