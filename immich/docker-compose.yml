@@ -1,6 +1,6 @@
 services:
   immich-server:
-    image: ghcr.io/immich-app/immich-server:v3.0.3
+    image: ghcr.io/immich-app/immich-server:v3.1.0
     volumes:
       - /mnt/immich/:/usr/src/app/upload
       - /etc/localtime:/etc/localtime:ro
@@ -17,7 +17,7 @@ services:
       - internal
 
   immich-machine-learning:
-    image: ghcr.io/immich-app/immich-machine-learning:v3.0.3
+    image: ghcr.io/immich-app/immich-machine-learning:v3.1.0
     volumes:
       - model-cache:/cache
     env_file:
