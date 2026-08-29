@@ -32,7 +32,7 @@
 
 services:
   broker:
-    image: docker.io/library/redis:7
+    image: docker.io/library/redis:7.4.11
     restart: unless-stopped
     volumes:
       - redisdata:/data
@@ -40,7 +40,7 @@ services:
       - internal
 
   webserver:
-    image: ghcr.io/paperless-ngx/paperless-ngx:latest
+    image: ghcr.io/paperless-ngx/paperless-ngx:3.0.2
     restart: unless-stopped
     depends_on:
       - broker
@@ -74,7 +74,7 @@ services:
       - "--chromium-allow-list=file:///tmp/.*"
 
   tika:
-    image: docker.io/apache/tika:latest
+    image: docker.io/apache/tika:3.3.1.0
     restart: unless-stopped
     networks:
       - internal

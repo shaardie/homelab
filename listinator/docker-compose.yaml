@@ -1,6 +1,6 @@
 services:
   listinator:
-    image: ghcr.io/hacky-day/listinator:latest
+    image: ghcr.io/hacky-day/listinator@sha256:e78eefecf98a2a04abc7ac262415bae2f6c3588790c7d3a8cc9dae183b0fcd59
     restart: unless-stopped
     env_file:
       - .env
