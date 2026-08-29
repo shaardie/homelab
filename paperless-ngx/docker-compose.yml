@@ -63,7 +63,7 @@ services:
       - internal
 
   gotenberg:
-    image: docker.io/gotenberg/gotenberg:8.7
+    image: docker.io/gotenberg/gotenberg:8.36
     restart: unless-stopped
 
     # The gotenberg chromium route is used to convert .eml files. We do not
