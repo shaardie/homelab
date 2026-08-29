@@ -5,7 +5,7 @@ roles:
     version: 1.0.0
   - src: https://github.com/UOS-RZ/secure_sshd.git
     scm: git
-    version: 1.1.1
+    version: 1.1.2
   - src: https://github.com/lkiesow/apt_autoupdate.git
   - name: lkiesow.verify_galaxy_versions
     version: 1.0.0
