@@ -1,6 +1,6 @@
 services:
   database:
-    image: postgres:17.8-alpine
+    image: postgres:17.11-alpine
     env_file:
       - .env
     volumes:
