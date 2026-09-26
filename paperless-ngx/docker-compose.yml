@@ -32,7 +32,7 @@
 
 services:
   broker:
-    image: docker.io/library/redis:8.10.1
+    image: docker.io/library/redis:8.10.2
     restart: unless-stopped
     volumes:
       - redisdata:/data
@@ -40,7 +40,7 @@ services:
       - internal
 
   webserver:
-    image: ghcr.io/paperless-ngx/paperless-ngx:3.2.0
+    image: ghcr.io/paperless-ngx/paperless-ngx:3.2.1
     restart: unless-stopped
     depends_on:
       - broker
