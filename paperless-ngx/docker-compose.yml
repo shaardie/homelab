@@ -32,7 +32,7 @@
 
 services:
   broker:
-    image: docker.io/library/redis:8.10.1
+    image: docker.io/library/redis:8.10.2
     restart: unless-stopped
     volumes:
       - redisdata:/data
@@ -40,7 +40,7 @@ services:
       - internal
 
   webserver:
-    image: ghcr.io/paperless-ngx/paperless-ngx:3.2.0
+    image: ghcr.io/paperless-ngx/paperless-ngx:3.3.4
     restart: unless-stopped
     depends_on:
       - broker
@@ -63,7 +63,7 @@ services:
       - internal
 
   gotenberg:
-    image: docker.io/gotenberg/gotenberg:8.37
+    image: docker.io/gotenberg/gotenberg:8.38
     restart: unless-stopped
 
     # The gotenberg chromium route is used to convert .eml files. We do not
@@ -74,7 +74,7 @@ services:
       - "--chromium-allow-list=file:///tmp/.*"
 
   tika:
-    image: docker.io/apache/tika:3.3.1.0
+    image: docker.io/apache/tika:3.3.3.0
     restart: unless-stopped
     networks:
       - internal
