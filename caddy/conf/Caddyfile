@@ -68,3 +68,7 @@ deezer-downloader.internal.haardiek.org {
     respond @blocked 403
     reverse_proxy navidrome-deezer-downloader-1:5000
 }
+
+charge-limiter.internal.haardiek.org {
+    reverse_proxy charge-limiter-charge-limiter-1:8000
+}

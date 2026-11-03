@@ -1,0 +1,17 @@
+services:
+  charge-limiter:
+    image: ghcr.io/shaardie/charge-limiter:main
+    restart: unless-stopped
+    volumes:
+      - data:/data
+    networks:
+      - proxy
+    env_file: docker-compose.env
+
+volumes:
+  data:
+  downloads:
+
+networks:
+  proxy:
+    external: true
